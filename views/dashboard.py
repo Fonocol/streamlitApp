@@ -1,24 +1,24 @@
 import streamlit as st
-import plotly.express as px
+import matplotlib.pyplot as plt
 import pandas as pd
 
 @st.cache_data
 def get_data_from_excel():
-    #path = "c:/Users/user/Downloads/supermarkt_sales.xlsx"
     df = pd.read_excel(
         io="supermarkt_sales.xlsx",
-        engine= 'openpyxl',
-        sheet_name = "Sales",
-        skiprows = 3,
-        usecols = 'B:R',
-        nrows = 1000,
+        engine='openpyxl',
+        sheet_name="Sales",
+        skiprows=3,
+        usecols='B:R',
+        nrows=1000,
     )
 
-    df["hour"] = pd.to_datetime(df["Time"],format="%H:%M:%S").dt.hour
+    df["hour"] = pd.to_datetime(df["Time"], format="%H:%M:%S").dt.hour
     return df
 
 df = get_data_from_excel()
 
+# Sidebar filters
 st.sidebar.header("Please Filter Here:")
 city = st.sidebar.multiselect(
     "Select the City:",
@@ -42,17 +42,14 @@ df_selection = df.query(
     "City == @city & Customer_type == @customer_type & Gender == @gender"
 )
 
-#st.dataframe(df_selection)
-
 # Main page
 st.title(":bar_chart: Sales Dashboard")
 st.markdown("##")
 
 total_sales = int(df_selection["Total"].sum())
-average_rating = round(df_selection["Rating"].mean(),1)
-star_raiting = ":star:" * int(round(average_rating,0))
-average_sale_by_transaction = round(df_selection["Total"].mean(),2)
-
+average_rating = round(df_selection["Rating"].mean(), 1)
+star_raiting = ":star:" * int(round(average_rating, 0))
+average_sale_by_transaction = round(df_selection["Total"].mean(), 2)
 
 left_col, middle_col, right_col = st.columns(3)
 with left_col:
@@ -67,44 +64,38 @@ with right_col:
 
 st.markdown("---")
 
-# plot the barchart
+# Plot sales by product line using matplotlib
 sales_by_product_line = (
     df_selection.groupby(by=["Product line"]).sum(numeric_only=True)[["Total"]].sort_values(by='Total')
 )
 
+# Plot the bar chart using matplotlib
+fig, ax = plt.subplots()
+ax.barh(sales_by_product_line.index, sales_by_product_line["Total"], color="#0083B8")
+ax.set_xlabel("Total Sales")
+ax.set_title("Sales by Product Line")
+st.pyplot(fig)
 
-fig_product_sales = px.bar(
-    sales_by_product_line,
-    x="Total",
-    y=sales_by_product_line.index,
-    orientation = "h",
-    title = "<b>Sales by Product Line</b>",
-    color_discrete_sequence=["#0083B8"]* len(sales_by_product_line),
-    template="plotly_white",
-)
-
-#sales per hour
+# Plot sales per hour using matplotlib
 sales_by_hour = df_selection.groupby(by=["hour"]).sum(numeric_only=True)[["Total"]]
-fig_hourly_sale = px.bar(
-    sales_by_hour,
-    x=sales_by_hour.index,
-    y='Total',
-    title = "<b>Sales by hour</b>",
-    color_discrete_sequence=["#0083B8"]* len(sales_by_hour),
-    template="plotly_white",
-)
 
-left_plot, right_plot = st.columns(2)
-left_plot.plotly_chart(fig_product_sales,use_container_width = True)
-right_plot.plotly_chart(fig_hourly_sale, use_container_width = True)
+# Plot the bar chart using matplotlib
+fig, ax = plt.subplots()
+ax.bar(sales_by_hour.index, sales_by_hour["Total"], color="#0083B8")
+ax.set_xlabel("Hour of Day")
+ax.set_ylabel("Total Sales")
+ax.set_title("Sales by Hour")
+st.pyplot(fig)
 
-hide_st_style = """ 
+# Hide streamlit style
+hide_st_style = """
                 <style>
                 #MainMenu {visibility: hidden;}
                 footer {visibility: hidden;}
                 header {visibility: hidden;}
                 </style>
                 """
-st.markdown(hide_st_style,unsafe_allow_html=True)
+st.markdown(hide_st_style, unsafe_allow_html=True)
 
+# Display data
 st.dataframe(df_selection.head(5))
