@@ -135,5 +135,4 @@ hide_st_style = """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
 # Display filtered data (Optional)
-if st.sidebar.checkbox("Show Data Table"):
-    st.dataframe(df_selection.head(10))
+st.dataframe(df_selection.head(10))
